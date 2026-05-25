@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex h-screen overflow-hidden">
+    <aside class="w-64 bg-burgundy text-white flex flex-col justify-between shadow-lg">
+        <div>
+            <div class="p-5 bg-burgundy-dark font-black text-2xl tracking-widest text-center">後台管理</div>
+            <nav class="mt-6 p-3 space-y-1">
+                <a href="{{ url_for('admin_dashboard') }}" class="block px-4 py-3 rounded-xl bg-burgundy-light">📋 訂單即時看板</a>
+                <a href="{{ url_for('admin_products') }}" class="block px-4 py-3 rounded-xl text-gray-200 hover:bg-burgundy-light/50">🍵 品項與上架管理</a>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-burgundy-light space-y-2">
+            <a href="{{ url_for('front_pos') }}" class="block text-center bg-gold text-burgundy-dark font-bold py-2 rounded-lg text-sm">返回前台點餐</a>
+            <a href="{{ url_for('logout') }}" class="block text-center text-xs text-gray-400 underline">安全登出</a>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+        <header class="bg-white border-b px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">當日即時訂單狀態</h1>
+        </header>
+        <div class="flex-1 p-6 overflow-y-auto space-y-4">
+            {% for order in orders[::-1] %}
+            <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-5 py-3 border-b flex justify-between items-center {% if order.status=='製作中' %}bg-amber-50/50{% else %}bg-gray-50{% endif %}">
+                    <span class="font-bold text-burgundy">單號：{{ order.order_number }} ({{ order.payment_method }})</span>
+                    <form action="{{ url_for('update_order_status', order_id=order.id) }}" method="POST">
+                        <select name="status" onchange="this.form.submit()" class="border rounded p-1 text-sm bg-white">
+                            <option value="製作中" {% if order.status=='製作中' %}selected{% endif %}>製作中</option>
+                            <option value="已完成" {% if order.status=='已完成' %}selected{% endif %}>已完成</option>
+                            <option value="已取消" {% if order.status=='已取消' %}selected{% endif %}>已取消</option>
+                        </select>
+                    </form>
+                </div>
+                <div class="p-5">
+                    <table class="w-full text-left text-sm">
+                        {% for item in order.items %}
+                        <tr class="border-b last:border-none">
+                            <td class="py-2 font-semibold">{{ item.product_name }}</td>
+                            <td class="py-2 text-xs text-gray-500">{{ item.sweetness }} / {{ item.ice }}</td>
+                            <td class="py-2 text-center">x{{ item.quantity }}</td>
+                            <td class="py-2 text-right">${{ item.price * item.quantity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    <div class="mt-4 text-right font-black text-xl text-burgundy">總計: ${{ order.total_amount }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

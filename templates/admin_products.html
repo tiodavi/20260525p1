@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex h-screen overflow-hidden">
+    <aside class="w-64 bg-burgundy text-white flex flex-col justify-between shadow-lg">
+        <div>
+            <div class="p-5 bg-burgundy-dark font-black text-2xl tracking-widest text-center">後台管理</div>
+            <nav class="mt-6 p-3 space-y-1">
+                <a href="{{ url_for('admin_dashboard') }}" class="block px-4 py-3 rounded-xl text-gray-200 hover:bg-burgundy-light/50">📋 訂單即時看板</a>
+                <a href="{{ url_for('admin_products') }}" class="block px-4 py-3 rounded-xl bg-burgundy-light">🍵 品項與上架管理</a>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-burgundy-light space-y-2">
+            <a href="{{ url_for('front_pos') }}" class="block text-center bg-gold text-burgundy-dark font-bold py-2 rounded-lg text-sm">返回前台點餐</a>
+            <a href="{{ url_for('logout') }}" class="block text-center text-xs text-gray-400 underline">安全登出</a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-6 bg-gray-50 flex space-x-6 overflow-y-auto">
+        <div class="w-1/3 bg-white p-5 rounded-2xl shadow-sm border h-fit">
+            <h3 class="font-bold text-burgundy mb-4">新增餐飲品項</h3>
+            <form action="{{ url_for('add_product') }}" method="POST" class="space-y-4">
+                <input type="text" name="name" placeholder="品名" required class="w-full p-2 border rounded-xl text-sm">
+                <input type="number" name="price" placeholder="售價" required class="w-full p-2 border rounded-xl text-sm">
+                <select name="category_id" class="w-full p-2 border rounded-xl text-sm bg-white">
+                    {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="w-full bg-burgundy text-white py-2 rounded-xl text-sm font-bold">新增上架</button>
+            </form>
+        </div>
+        <div class="w-2/3 bg-white rounded-2xl shadow-sm border overflow-hidden">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-gray-100 font-bold">
+                    <tr><th class="p-4">品名</th><th class="p-4">售價</th><th class="p-4 text-center">狀態</th><th class="p-4 text-center">操作</th></tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for prod in products %}
+                    <tr>
+                        <td class="p-4 font-semibold">{{ prod.name }}</td>
+                        <td class="p-4 text-burgundy font-bold">${{ prod.price }}</td>
+                        <td class="p-4 text-center">
+                            <a href="{{ url_for('toggle_product', product_id=prod.id) }}" class="px-3 py-1 rounded-full text-xs {% if prod.is_available %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                {% if prod.is_available %}供應中{% else %}已下架{% endif %}
+                            </a>
+                        </td>
+                        <td class="p-4 text-center"><a href="{{ url_for('delete_product', product_id=prod.id) }}" class="text-xs text-red-500 underline">刪除</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

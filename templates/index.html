@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="bg-burgundy text-white px-6 py-3 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-3">
+        <span class="text-2xl font-bold tracking-wider border-r pr-3 border-burgundy-light">Claret <span class="text-gold">POS</span></span>
+        <span class="text-sm text-gray-300">櫃檯點餐收銀</span>
+    </div>
+    <div class="flex items-center space-x-4">
+        <span class="text-sm bg-burgundy-dark px-3 py-1 rounded border border-burgundy-light">收銀員: 現場服務</span>
+        <a href="{{ url_for('admin_dashboard') }}" class="bg-gold hover:bg-yellow-600 text-burgundy-dark font-semibold px-4 py-1.5 rounded transition shadow">進入後台系統</a>
+    </div>
+</header>
+
+<main class="flex-1 flex overflow-hidden">
+    <section class="w-2/3 p-4 flex flex-col h-full">
+        <div class="flex space-x-2 mb-4 overflow-x-auto pb-2">
+            <button onclick="filterCategory('all')" class="cat-btn bg-burgundy text-white px-5 py-2.5 rounded-lg shadow font-medium transition whitespace-nowrap">全部商品</button>
+            {% for cat in categories %}
+            <button onclick="filterCategory('cat-{{ cat.id }}')" class="cat-btn bg-white text-burgundy border border-burgundy hover:bg-burgundy-bg px-5 py-2.5 rounded-lg shadow font-medium transition whitespace-nowrap">{{ cat.name }}</button>
+            {% endfor %}
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 overflow-y-auto flex-1 pr-1" id="product-grid">
+            {% for prod in products %}
+            {% if prod.is_available %}
+            <div class="product-card bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-burgundy transition cursor-pointer flex flex-col justify-between h-32" 
+                 data-category="cat-{{ prod.category_id }}" onclick="openCustomModal({{ prod.id }}, '{{ prod.name }}', {{ prod.price }})">
+                <div class="font-bold text-gray-800 text-lg">{{ prod.name }}</div>
+                <div class="flex justify-between items-center mt-2">
+                    <span class="text-xs text-gray-400">{{ prod.category.name }}</span>
+                    <span class="text-burgundy font-bold text-xl">${{ prod.price }}</span>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="w-1/3 bg-white border-l border-gray-200 shadow-xl flex flex-col h-full">
+        <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="font-bold text-lg text-burgundy flex items-center">📋 當前點餐明細</h2>
+            <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="cart-items">
+            <div id="empty-cart-msg" class="text-center text-gray-400 py-12">請從左側選擇飲品加入客製化</div>
+        </div>
+        <div class="p-4 border-t border-gray-200 bg-gray-50 space-y-3">
+            <div class="flex justify-between text-sm text-gray-600"><span>品項總計</span><span id="cart-count">0 杯</span></div>
+            <div class="flex justify-between items-center border-t border-dashed border-gray-300 pt-2">
+                <span class="text-gray-800 font-bold text-lg">應收總額</span>
+                <span class="text-burgundy text-3xl font-black" id="cart-total">$0</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 py-1">
+                <label class="border rounded-lg p-2 text-center cursor-pointer bg-white flex flex-col items-center"><input type="radio" name="pay_method" value="現金" checked class="accent-burgundy mb-1"><span class="text-xs">現金</span></label>
+                <label class="border rounded-lg p-2 text-center cursor-pointer bg-white flex flex-col items-center"><input type="radio" name="pay_method" value="LINE Pay" class="accent-burgundy mb-1"><span class="text-xs">LINE Pay</span></label>
+                <label class="border rounded-lg p-2 text-center cursor-pointer bg-white flex flex-col items-center"><input type="radio" name="pay_method" value="信用卡" class="accent-burgundy mb-1"><span class="text-xs">信用卡</span></label>
+            </div>
+            <button onclick="submitOrder()" class="w-full bg-burgundy hover:bg-burgundy-light text-white text-lg font-bold py-3.5 rounded-xl transition shadow-lg">確認發送訂單 (出單)</button>
+        </div>
+    </section>
+</main>
+
+<div id="custom-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl w-[500px] shadow-2xl overflow-hidden m-4">
+        <div class="bg-burgundy text-white p-4 flex justify-between items-center">
+            <h3 class="text-xl font-bold" id="modal-product-name">飲品客製化</h3>
+            <button onclick="closeCustomModal()" class="text-white text-2xl">&times;</button>
+        </div>
+        <div class="p-6 space-y-5">
+            <input type="hidden" id="modal-product-id"><input type="hidden" id="modal-product-price">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">甜度調整</label>
+                <div class="grid grid-cols-5 gap-2">
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-burgundy text-white" data-type="sweet" data-val="正常糖">正常</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="sweet" data-val="少糖">少糖</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="sweet" data-val="半糖">半糖</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="sweet" data-val="微糖">微糖</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="sweet" data-val="無糖">無糖</button>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">冰量調整</label>
+                <div class="grid grid-cols-5 gap-2">
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-burgundy text-white" data-type="ice" data-val="正常冰">正常冰</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="ice" data-val="少冰">少冰</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="ice" data-val="微冰">微冰</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="ice" data-val="去冰">去冰</button>
+                    <button class="opt-btn border p-2 rounded-lg text-sm bg-white" data-type="ice" data-val="常溫">常溫</button>
+                </div>
+            </div>
+            <div class="flex justify-between items-center border-t pt-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">數量</label>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="updateModalQty(-1)" class="bg-gray-200 px-3 py-1 rounded font-bold">-</button>
+                        <span id="modal-qty" class="w-10 text-center font-bold text-lg">1</span>
+                        <button onclick="updateModalQty(1)" class="bg-gray-200 px-3 py-1 rounded font-bold">+</button>
+                    </div>
+                </div>
+                <div class="text-right"><span class="text-sm text-gray-400">小計</span><div class="text-2xl font-bold text-burgundy" id="modal-subtotal">$0</div></div>
+            </div>
+        </div>
+        <div class="p-4 bg-gray-50 border-t flex space-x-3">
+            <button onclick="closeCustomModal()" class="w-1/3 border py-2.5 rounded-xl text-gray-600">取消</button>
+            <button onclick="addToCart()" class="w-2/3 bg-burgundy text-white py-2.5 rounded-xl font-bold">確認加入</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cart = []; let currentSweetness = "正常糖"; let currentIce = "正常冰";
+    function filterCategory(catId) {
+        document.querySelectorAll('.cat-btn').forEach(b => { b.classList.remove('bg-burgundy', 'text-white'); b.classList.add('bg-white', 'text-burgundy', 'border'); });
+        event.target.classList.add('bg-burgundy', 'text-white');
+        document.querySelectorAll('.product-card').forEach(c => { c.style.display = (catId === 'all' || c.getAttribute('data-category') === catId) ? 'flex' : 'none'; });
+    }
+    function openCustomModal(id, name, price) {
+        document.getElementById('modal-product-id').value = id;
+        document.getElementById('modal-product-name').innerText = name;
+        document.getElementById('modal-product-price').value = price;
+        document.getElementById('modal-qty').innerText = 1;
+        currentSweetness = "正常糖"; currentIce = "正常冰";
+        resetOptionButtons('sweet', '正常糖'); resetOptionButtons('ice', '正常冰');
+        calculateModalSubtotal(); document.getElementById('custom-modal').classList.remove('hidden');
+    }
+    function closeCustomModal() { document.getElementById('custom-modal').classList.add('hidden'); }
+    document.querySelectorAll('.opt-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.getAttribute('data-type'); const val = this.getAttribute('data-val');
+            if(type === 'sweet') currentSweetness = val; else currentIce = val;
+            resetOptionButtons(type, val);
+        });
+    });
+    function resetOptionButtons(type, val) {
+        document.querySelectorAll(`.opt-btn[data-type="${type}"]`).forEach(b => { b.classList.remove('bg-burgundy', 'text-white'); b.classList.add('bg-white'); });
+        document.querySelector(`.opt-btn[data-type="${type}"][data-val="${val}"]`).classList.add('bg-burgundy', 'text-white');
+    }
+    function updateModalQty(amt) {
+        let qty = parseInt(document.getElementById('modal-qty').innerText) + amt;
+        if(qty < 1) qty = 1; document.getElementById('modal-qty').innerText = qty; calculateModalSubtotal();
+    }
+    function calculateModalSubtotal() {
+        document.getElementById('modal-subtotal').innerText = '$' + (parseInt(document.getElementById('modal-product-price').value) * parseInt(document.getElementById('modal-qty').innerText));
+    }
+    function addToCart() {
+        cart.push({
+            id: document.getElementById('modal-product-id').value, name: document.getElementById('modal-product-name').innerText,
+            price: parseInt(document.getElementById('modal-product-price').value), qty: parseInt(document.getElementById('modal-qty').innerText),
+            sweetness: currentSweetness, ice: currentIce
+        });
+        closeCustomModal(); renderCart();
+    }
+    function removeCartItem(index) { cart.splice(index, 1); renderCart(); }
+    function clearCart() { cart = []; renderCart(); }
+    function renderCart() {
+        const container = document.getElementById('cart-items'); const emptyMsg = document.getElementById('empty-cart-msg');
+        container.querySelectorAll('.cart-item-row').forEach(e => e.remove());
+        if(cart.length === 0) { emptyMsg.style.display = 'block'; document.getElementById('cart-count').innerText = "0 杯"; document.getElementById('cart-total').innerText = "$0"; return; }
+        emptyMsg.style.display = 'none'; let total = 0; let count = 0;
+        cart.forEach((item, index) => {
+            total += (item.price * item.qty); count += item.qty;
+            const div = document.createElement('div'); div.className = 'cart-item-row bg-burgundy-bg border border-burgundy/10 rounded-xl p-3 flex justify-between items-center';
+            div.innerHTML = `<div><div class="font-bold">${item.name} <span class="text-xs text-burgundy">x${item.qty}</span></div><div class="text-xs text-gray-500">${item.sweetness} / ${item.ice}</div></div><div class="flex items-center space-x-3"><span class="font-bold">$${item.price * item.qty}</span><button onclick="removeCartItem(${index})" class="text-red-500 font-bold">&times;</button></div>`;
+            container.appendChild(div);
+        });
+        document.getElementById('cart-count').innerText = count + " 杯"; document.getElementById('cart-total').innerText = "$" + total;
+    }
+    function submitOrder() {
+        if(cart.length === 0) { Swal.fire({ icon: 'warning', title: '購物車無商品', confirmButtonColor: '#722F37' }); return; }
+        fetch('/api/orders', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_method: document.querySelector('input[name="pay_method"]:checked').value, items: cart })
+        }).then(res => res.json()).then(data => {
+            if(data.success) { Swal.fire({ icon: 'success', title: '訂單成立！', text: '單號: ' + data.order_number, confirmButtonColor: '#722F37' }); clearCart(); }
+        });
+    }
+</script>
+{% endblock %}

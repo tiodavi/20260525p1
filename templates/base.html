@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClaretPOS - 專業茶飲點餐系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        burgundy: { DEFAULT: '#722F37', light: '#9B444F', dark: '#4A1E24', bg: '#FDFBFB' },
+                        gold: '#D4AF37'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #F8F6F6; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    {% block content %}{% endblock %}
+</body>
+</html>
