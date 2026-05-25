@@ -4,21 +4,22 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from dotenv import load_dotenv
 
-# 載入環境變數
+# 1. 基礎設定
 load_dotenv()
-
 app = Flask(__name__)
+
+# 強制要求必須有 SECRET_KEY，否則啟動即報錯
 app.secret_key = os.environ.get("SECRET_KEY")
 if not app.secret_key:
-    raise RuntimeError("請確保在環境變數中設定了 SECRET_KEY")
+    raise RuntimeError("請確保在 Vercel 環境變數中設定了 SECRET_KEY")
 
-# 資料庫連線設定
+# 資料庫連結設定
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///pos.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# ==================== DATA MODELS ====================
+# ==================== 資料模型 ====================
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False, unique=True)
@@ -49,10 +50,11 @@ class OrderItem(db.Model):
     sweetness = db.Column(db.String(20), nullable=False)
     ice = db.Column(db.String(20), nullable=False)
 
-# ==================== 資料庫初始化 ====================
-def init_database():
-    with app.app_context():
+# ==================== 初始化機制 ====================
+with app.app_context():
+    try:
         db.create_all()
+        # 初始資料填充
         if not Category.query.first():
             c1 = Category(name="經典純茶")
             c2 = Category(name="鮮奶拿鐵")
@@ -66,21 +68,17 @@ def init_database():
                 Product(name="珍珠奶茶", price=50, category_id=c3.id),
             ])
             db.session.commit()
+    except Exception as e:
+        print(f"初始化資料庫時發生錯誤: {e}")
 
-# 在程式啟動時執行一次初始化
-init_database()
-
-# ==================== ROUTING / CONTROLLERS ====================
-
+# ==================== 路由控制 ====================
 @app.route('/favicon.ico')
 def favicon():
     return '', 204
 
 @app.route('/')
 def front_pos():
-    categories = Category.query.all()
-    products = Product.query.all()
-    return render_template('index.html', categories=categories, products=products)
+    return render_template('index.html', categories=Category.query.all(), products=Product.query.all())
 
 @app.route('/api/orders', methods=['POST'])
 def create_order():
@@ -89,7 +87,7 @@ def create_order():
     if not items: return jsonify({"success": False}), 400
     
     order_num = f"WINE-{int(datetime.now().timestamp())}"
-    total = sum(int(item['price']) * int(item['qty']) for item in items)
+    total = sum(int(i['price']) * int(i['qty']) for i in items)
     
     new_order = Order(
         order_number=order_num, total_amount=total,
@@ -103,7 +101,7 @@ def create_order():
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
-        if request.form['username'] == 'admin' and request.form['password'] == 'admin':
+        if request.form.get('username') == 'admin' and request.form.get('password') == 'admin':
             session['logged_in'] = True
             return redirect(url_for('admin_dashboard'))
     return render_template('login.html')
