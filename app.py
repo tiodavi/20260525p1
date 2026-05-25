@@ -168,6 +168,11 @@ def delete_product(product_id):
     db.session.commit()
     return redirect(url_for('admin_products'))
 
+# 確保這部分在 app.py 的最下方
 if __name__ == '__main__':
-    with app.app_context(): db.create_all()
-    app.run(debug=True, port=5000)
+    with app.app_context():
+        db.create_all()
+    app.run()
+
+# Vercel 實際上會從這裡抓取 app 實例，確保你的變數名稱是 app
+app = Flask(__name__)
