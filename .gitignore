@@ -1,0 +1,20 @@
+# Python 虛擬環境
+venv/
+env/
+.venv/
+
+# 環境變數設定檔 (最重要！)
+.env
+
+# SQLite 資料庫檔案
+*.db
+*.sqlite3
+
+# Python 編譯檔
+__pycache__/
+*.py[cod]
+
+# IDE 設定 (若你有用 VS Code 或 PyCharm)
+.vscode/
+.idea/
+.DS_Store

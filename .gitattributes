@@ -1,2 +1,14 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# 確保文字檔案自動處理行尾格式，避免 Windows 與 Linux 的換行符號差異導致 Git 誤判修改
+* text=auto
+
+# 強制將所有 Python 與 HTML 檔案以 UTF-8 編碼處理，這對中文顯示至關重要
+*.py text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+
+# 設定 .env 檔案為 binary，防止 Git 誤偵測內容或進行不必要的轉換
+.env binary
